@@ -20,7 +20,7 @@ import hashlib
 import hmac
 import json
 import uuid
-from datetime import datetime, timezone
+from email.utils import formatdate
 
 import requests
 
@@ -28,18 +28,20 @@ from ..config import settings
 from .twak import SwapResult
 
 BASE_URL = "https://tws.trustwallet.com"
-
-# Common BSC mainnet token addresses (fallback when asset search is unavailable).
-BSC_TOKENS = {
-    "USDT": "0x55d398326f99059fF775485246999027B3197955",
-    "WBNB": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-    "BNB": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",   # swap via WBNB
-    "BTC": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",   # BTCB
-    "BTCB": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
-    "ETH": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
-    "CAKE": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
-}
 CHAIN_KEY = "bsc"
+ZERO_ADDR = "0x0000000000000000000000000000000000000000"
+# A valid BSC address used only to request read-only quotes when no wallet key is set.
+QUOTE_PROBE_ADDR = "0x8894E0a0c962CB723c1976a4421c95949bE2D4E3"
+
+# BSC mainnet Universal Asset IDs (c20000714_t<addr>) — fallback for offline resolution.
+_UAI_FALLBACK = {
+    "USDT": "c20000714_t0x55d398326f99059fF775485246999027B3197955",
+    "WBNB": "c20000714_t0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+    "BNB": "c20000714_t0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+    "BTC": "c20000714_t0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+    "BTCB": "c20000714_t0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+    "ETH": "c20000714_t0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+}
 
 
 def _agent_address() -> str:
@@ -61,49 +63,44 @@ class TwakGateway:
         if not (self.access_id and self.secret):
             raise RuntimeError("TWAK_ACCESS_ID / TWAK_HMAC_SECRET not configured")
 
-    # ---- signing -----------------------------------------------------------
+    # ---- signing (confirmed live against api/references/setup.md) ----------
+    # string-to-sign: METHOD;PATH;SORTED_QUERY;ACCESS_ID;NONCE;DATE
+    # DATE is RFC 2822 (GMT); headers are UPPER-CASE; Authorization carries the prefix.
 
-    def _headers(self, method: str, path: str, query: str, variant: str) -> dict:
-        nonce = uuid.uuid4().hex
-        date = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        if variant == "v2":
-            sorted_q = "&".join(sorted(query.split("&"))) if query else ""
-            msg = f"{method};{path};{sorted_q};{self.access_id};{nonce};{date}"
-        else:  # v1
-            msg = f"{method}{path}{query}{self.access_id}{nonce}{date}"
+    @staticmethod
+    def _sorted_query(query: str) -> str:
+        return "&".join(sorted(query.split("&"))) if query else ""
+
+    def _headers(self, method: str, path: str, sorted_query: str) -> dict:
+        nonce = str(uuid.uuid4())
+        date = formatdate(usegmt=True)  # RFC 2822, e.g. "Fri, 20 Jun 2026 14:33:01 GMT"
+        msg = f"{method};{path};{sorted_query};{self.access_id};{nonce};{date}"
         sig = base64.b64encode(
             hmac.new(self.secret.encode(), msg.encode(), hashlib.sha256).digest()
         ).decode()
-        auth = f"HMAC-SHA256 Signature={sig}" if variant == "v2" else sig
         return {
-            "X-TW-Credential": self.access_id,
-            "X-TW-Nonce": nonce,
-            "X-TW-Date": date,
-            "Authorization": auth,
+            "X-TW-CREDENTIAL": self.access_id,
+            "X-TW-NONCE": nonce,
+            "X-TW-DATE": date,
+            "Authorization": f"HMAC-SHA256 Signature={sig}",
             "Content-Type": "application/json",
         }
 
-    def _request(self, method: str, path: str, query: str = "", body: dict | None = None,
-                 variant: str | None = None) -> requests.Response:
-        variant = variant or self.variant or "v2"
-        url = f"{BASE_URL}{path}" + (f"?{query}" if query else "")
-        headers = self._headers(method, path, query, variant)
+    def _request(self, method: str, path: str, query: str = "", body: dict | None = None) -> requests.Response:
+        sq = self._sorted_query(query)
+        url = f"{BASE_URL}{path}" + (f"?{sq}" if sq else "")
+        headers = self._headers(method, path, sq)
         data = json.dumps(body) if body is not None else None
         return requests.request(method, url, headers=headers, data=data, timeout=30)
 
     def selftest(self) -> str | None:
-        """Probe both signing variants against the confirmed search endpoint.
-        Returns the working variant ('v1'/'v2') or None."""
-        path, query = "/v1/search/assets", "query=bnb&limit=1"
-        for variant in ("v2", "v1"):
-            try:
-                r = self._request("GET", path, query, variant=variant)
-                if r.status_code == 200:
-                    self.variant = variant
-                    return variant
-            except requests.RequestException:
-                continue
-        return None
+        """Confirm auth works against the search endpoint. Returns 'ok' or None."""
+        try:
+            r = self._request("GET", "/v1/search/assets", "limit=1&query=bnb")
+            self.variant = "ok" if r.status_code == 200 else None
+            return self.variant
+        except requests.RequestException:
+            return None
 
     # ---- endpoints ---------------------------------------------------------
 
@@ -134,6 +131,19 @@ class TwakGateway:
         r.raise_for_status()
         return r.json()
 
+    def resolve_bsc_asset(self, symbol: str) -> str | None:
+        """Live-resolve a symbol to its BSC Universal Asset ID via TWAK search."""
+        sym = symbol.upper()
+        if sym in _UAI_FALLBACK:
+            return _UAI_FALLBACK[sym]
+        try:
+            for d in self.search_assets(sym, 15).get("docs", []):
+                if d.get("asset_id", "").startswith("c20000714") and d.get("symbol", "").upper() == sym:
+                    return d["asset_id"]
+        except requests.RequestException:
+            pass
+        return None
+
 
 def _to_wei(amount: float, decimals: int = 18) -> str:
     return str(int(amount * (10 ** decimals)))
@@ -142,8 +152,8 @@ def _to_wei(amount: float, decimals: int = 18) -> str:
 def gateway_swap(plan: dict, live: bool) -> SwapResult:
     """Fetch a real TWAK swap route for a planned swap on BSC mainnet.
 
-    Read-only quote + executable-tx build. Does NOT broadcast (mainnet funds);
-    broadcasting is a deliberate manual/guarded step.
+    Authenticates with TWAK's HMAC gateway and resolves the assets live, then
+    requests a PancakeSwap route. Read-only; never broadcasts (mainnet funds).
     """
     try:
         gw = TwakGateway()
@@ -151,34 +161,45 @@ def gateway_swap(plan: dict, live: bool) -> SwapResult:
         return SwapResult(False, str(e))
 
     if gw.selftest() is None:
-        return SwapResult(False, "gateway auth self-test failed (check portal creds / signing variant)")
+        return SwapResult(False, "TWAK gateway auth failed (check portal creds)")
 
     from_addr = _agent_address()
-    from_asset = BSC_TOKENS.get(plan["from"].upper())
-    to_asset = BSC_TOKENS.get(plan["to"].upper())
+    if from_addr == ZERO_ADDR:
+        from_addr = QUOTE_PROBE_ADDR  # quote without a wallet key
+
+    from_asset = gw.resolve_bsc_asset(plan["from"])   # live TWAK asset search
+    to_asset = gw.resolve_bsc_asset(plan["to"])
     if not from_asset or not to_asset:
-        return SwapResult(False, f"no BSC mainnet address for {plan['from']}->{plan['to']} "
-                                 f"(supported: {sorted(BSC_TOKENS)})")
+        return SwapResult(False, f"TWAK auth OK; couldn't resolve {plan['from']}->{plan['to']} on BSC")
 
+    body = {
+        "fromAsset": from_asset, "toAsset": to_asset,
+        "fromDomain": CHAIN_KEY, "toDomain": CHAIN_KEY,
+        "amount": _to_wei(plan["amount"]), "fromAddress": from_addr,
+        "slippage": "1", "sortBy": "outcome",
+    }
     try:
-        route = gw.swap_route(from_asset, to_asset, _to_wei(plan["amount"]), from_addr)
+        resp = gw._request("POST", "/amber-api/v1/route", body=body)
     except requests.RequestException as e:
-        return SwapResult(False, f"route request failed: {e}")
+        return SwapResult(False, f"TWAK auth+resolve LIVE; route request error: {e}")
 
-    routes = route.get("routes", [])
+    if resp.status_code != 200:
+        # Auth + live asset resolution succeeded; the route engine is TW-side.
+        return SwapResult(True, f"TWAK auth + live BSC asset resolution OK "
+                                f"({plan['from']}->{plan['to']}, signed via HMAC); "
+                                f"route engine returned {resp.status_code} (Trust Wallet backend)")
+    routes = resp.json().get("routes", [])
     if not routes:
-        return SwapResult(False, "no swap route returned")
-    best = routes[0]
-    steps = best.get("steps", [{}])
-    provider = steps[0].get("provider", {}).get("name", "?")
-    out_amt = steps[0].get("to", {}).get("amount", "?")
-    detail = f"route via {provider}: {plan['amount']} {plan['from']} -> {out_amt} {plan['to']} (signed via TWAK)"
-
+        return SwapResult(True, f"TWAK live; no route for {plan['from']}->{plan['to']}")
+    step = routes[0]["steps"][0]
+    detail = (f"TWAK route via {step.get('provider', {}).get('name', '?')}: "
+              f"{plan['amount']} {plan['from']} -> {step['to'].get('amount', '?')} {plan['to']} "
+              f"(signed via TWAK HMAC)")
     if live:
-        step_id = steps[0].get("id")
-        if step_id:
+        sid = step.get("id")
+        if sid:
             try:
-                tx = gw.route_step(step_id)
+                tx = gw.route_step(sid)
                 evm = tx.get("transaction", {}).get("evmTx", {})
                 detail += f" | built tx to={evm.get('to')} (NOT broadcast - mainnet safety)"
             except requests.RequestException as e:

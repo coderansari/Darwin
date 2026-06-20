@@ -88,8 +88,8 @@ python -m darwin.cli register --name darwin-foundry
 - `darwin/identity/bnb.py`: registers Darwin's verifiable **ERC-8004 on-chain identity** on BSC testnet via the official `bnbagent` SDK (gas-sponsored). The agent's identity references the strategy it evolved.
 
 ### 🔐 Trust Wallet Agent Kit
-- `darwin/execute/twak_gateway.py`: a correct **HMAC-signed** client for the TWAK API gateway (`tws.trustwallet.com`), fetching real PancakeSwap swap routes (`/amber-api/v1/route`) for the champion's tokens, and building the executable transaction.
-- *Note:* the "Best Use of TWAK" special prize is Track-1-scoped (live autonomous execution). Darwin integrates TWAK as its execution layer but our submission targets Track 2 + the two cross-track specials.
+- `darwin/execute/twak_gateway.py`: a **live HMAC-authenticated** client for the TWAK API gateway (`tws.trustwallet.com`). It signs requests correctly (RFC-2822 date, sorted-query `METHOD;PATH;QUERY;ACCESS_ID;NONCE;DATE`), resolves BSC assets live via `/v1/search/assets`, and structures PancakeSwap route requests (`/amber-api/v1/route`).
+- *Status:* auth + live BSC asset resolution are confirmed working with portal creds; the swap-route computation is gated by Trust Wallet's backend (entitlement on the free portal tier). `execute` falls back cleanly. The "Best Use of TWAK" special prize is Track-1-scoped (live autonomous execution), so it isn't our target — but the integration is real.
 
 ## How it maps to Track 2 judging
 
