@@ -1,26 +1,66 @@
 {
-  "name": "Golden Cross 20/50 x RSI Reversion 14 x Golden Cross 20/50 x RSI Reversion 14 #8550",
+  "name": "Dual-MA Trend Follower v2 - Regime Filtered x Dual-MA Trend Follower v2 - Regime Filter x Dual-MA Trend Follower v2 - Regime Filtered x ROC Momentum Pulse x ROC Momentum Pulse #9951",
   "universe": [
     "BTC",
     "ETH",
     "BNB",
-    "SOL"
+    "SOL",
+    "XRP",
+    "ADA",
+    "DOGE",
+    "LINK"
   ],
   "timeframe": "1d",
   "indicators": [
     {
-      "id": "ma_fast",
+      "id": "ema_fast",
       "type": "EMA",
-      "period": 31,
+      "period": 12,
       "source": "close",
       "fast": 12,
       "slow": 26,
       "signal": 9
     },
     {
-      "id": "ma_slow",
+      "id": "ema_slow",
       "type": "EMA",
-      "period": 52,
+      "period": 40,
+      "source": "close",
+      "fast": 12,
+      "slow": 26,
+      "signal": 9
+    },
+    {
+      "id": "ema_regime",
+      "type": "EMA",
+      "period": 100,
+      "source": "close",
+      "fast": 12,
+      "slow": 26,
+      "signal": 9
+    },
+    {
+      "id": "rsi14",
+      "type": "RSI",
+      "period": 14,
+      "source": "close",
+      "fast": 12,
+      "slow": 26,
+      "signal": 9
+    },
+    {
+      "id": "macd",
+      "type": "MACD",
+      "period": 14,
+      "source": "close",
+      "fast": 12,
+      "slow": 26,
+      "signal": 9
+    },
+    {
+      "id": "macd_sig",
+      "type": "MACD_SIGNAL",
+      "period": 14,
       "source": "close",
       "fast": 12,
       "slow": 26,
@@ -28,34 +68,69 @@
     }
   ],
   "entry": {
-    "any": [
+    "all": [
       {
-        "left": "ma_fast",
+        "left": "ema_fast",
         "op": "cross_above",
-        "right": "ma_slow"
+        "right": "ema_slow"
+      },
+      {
+        "left": "close",
+        "op": ">",
+        "right": "ema_regime"
+      },
+      {
+        "left": "rsi14",
+        "op": ">",
+        "right": 45
+      },
+      {
+        "left": "rsi14",
+        "op": ">",
+        "right": 58.309
+      },
+      {
+        "left": "macd",
+        "op": ">",
+        "right": "macd_sig"
       }
     ]
   },
   "exit": {
     "any": [
       {
-        "left": "ma_fast",
+        "left": "ema_fast",
+        "op": "cross_below",
+        "right": "ema_slow"
+      },
+      {
+        "left": "close",
+        "op": "<",
+        "right": "ema_regime"
+      },
+      {
+        "left": "rsi14",
+        "op": ">",
+        "right": 80
+      },
+      {
+        "left": "macd",
         "op": "cross_above",
-        "right": "ma_slow"
+        "right": "macd_sig"
       }
     ]
   },
   "risk": {
-    "max_position_pct": 0.317,
-    "max_open_positions": 2,
-    "stop_loss_pct": 0.086,
-    "take_profit_pct": 0.15,
-    "max_drawdown_pct": 0.3,
-    "trailing_stop_pct": 0.0
+    "max_position_pct": 0.15,
+    "max_open_positions": 4,
+    "stop_loss_pct": 0.08,
+    "take_profit_pct": 0.28,
+    "max_drawdown_pct": 0.25,
+    "trailing_stop_pct": 0.007
   },
   "sizing": {
     "type": "equal_weight",
     "fraction": 0.2
   },
-  "rationale": "ride medium-term trends via EMA crossover"
+  "rationale": "Adds a 100-period EMA macro-regime filter and MACD confirmation to eliminate counter-trend entries during sustained bear phases, reducing drawdown and improving trade quality at the cost of fewer but higher-conviction signals."
 }

@@ -127,9 +127,11 @@ def fitness_score(m: Metrics) -> float:
     score = risk_adj / (1.0 + abs(m.max_drawdown) * 3.0)
     score += 0.3 * ret
     score *= m.rule_adherence ** 2               # coherence gate
-    score /= (1.0 + m.num_trades / 40.0)         # turnover penalty
+    score /= (1.0 + m.num_trades / 40.0)         # turnover penalty (over-trading)
     if m.exposure < 0.02:                         # never really in the market
         score *= 0.3
+    if m.num_trades < 8:                          # too few trades to be statistically trustworthy
+        score *= max(0.15, m.num_trades / 8.0)
     return float(score)
 
 

@@ -56,8 +56,10 @@ class CMCClient:
         except ValueError:
             raise CMCError(f"non-JSON response ({resp.status_code}) from {path}")
         status = payload.get("status", {})
-        if status.get("error_code"):
-            raise CMCError(f"CMC error {status['error_code']}: {status.get('error_message')}")
+        ec = status.get("error_code")
+        # CMC returns error_code 0 (or the string "0") on success; only non-zero is an error.
+        if ec and str(ec) != "0":
+            raise CMCError(f"CMC error {ec}: {status.get('error_message')}")
         if resp.status_code != 200:
             raise CMCError(f"HTTP {resp.status_code} from {path}")
         cache_file.write_text(json.dumps(payload))

@@ -40,17 +40,18 @@ def _fg_class(v: float) -> str:
 
 def cmd_evolve(args: argparse.Namespace) -> int:
     universe = [s.strip().upper() for s in args.universe.split(",") if s.strip()]
-    force_syn = args.synthetic or not settings.has_cmc
+    syn = args.synthetic
+    data_src = "synthetic" if syn else ("CMC OHLCV (live)" if settings.has_cmc else "Binance (real)")
+    sig_src = "synthetic" if (syn or not settings.has_cmc) else "CMC Fear & Greed (live)"
 
-    _print(f"Darwin - evolving on {universe} ({'synthetic' if force_syn else 'CoinMarketCap'} data)")
-    data = load_market_data(universe, count=args.bars, timeframe=args.timeframe, force_synthetic=force_syn)
+    _print(f"Darwin - evolving on {universe}  | prices: {data_src}  | signals: {sig_src}")
+    data = load_market_data(universe, count=args.bars, timeframe=args.timeframe, force_synthetic=syn)
 
     # CMC Fear & Greed signal (proprietary CMC data) -> regime context + condition source.
-    signals = load_signals(count=args.bars, timeframe=args.timeframe, force_synthetic=force_syn)
+    signals = load_signals(count=args.bars, timeframe=args.timeframe, force_synthetic=syn)
     fgi_now = float(signals["fgi"].iloc[-1])
     fg_latest = {"value": int(round(fgi_now)), "value_classification": _fg_class(fgi_now)}
-    src = "synthetic" if force_syn else "CMC"
-    _print(f"  Fear & Greed ({src}): {fg_latest['value']} ({fg_latest['value_classification']})")
+    _print(f"  Fear & Greed ({sig_src}): {fg_latest['value']} ({fg_latest['value_classification']})")
 
     generator = None if args.no_llm else StrategyGenerator()
     llm_state = "on" if (generator and generator.enabled) else "off"
@@ -70,7 +71,7 @@ def cmd_evolve(args: argparse.Namespace) -> int:
     result = evolver.evolve(universe, context=context, on_generation=on_gen)
 
     meta = {
-        "data_source": "synthetic" if force_syn else "CoinMarketCap",
+        "data_source": data_src,
         "bars": args.bars,
         "llm": llm_state,
     }

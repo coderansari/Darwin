@@ -84,7 +84,10 @@ class StrategyGenerator:
         if self.api_key:
             from anthropic import Anthropic  # lazy import
 
-            self._client = Anthropic(api_key=self.api_key)
+            kwargs = {"api_key": self.api_key}
+            if settings.anthropic_base_url:           # e.g. DGRID gateway
+                kwargs["base_url"] = settings.anthropic_base_url
+            self._client = Anthropic(**kwargs)
 
     @property
     def enabled(self) -> bool:

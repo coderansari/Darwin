@@ -29,6 +29,17 @@ via the Trust Wallet Agent Kit and register on-chain via the BNB AI Agent SDK.
                          Track 2          (TWAK)              (BNB SDK)
 ```
 
+## Live result
+
+Evolved on **live CoinMarketCap data** (2yr OHLCV + Fear & Greed) with Claude
+(via an Anthropic-compatible gateway) as the evolution operator:
+
+> **Champion: Dual-MA Trend Follower (Regime-Filtered) × ROC Momentum Pulse**
+> +13.1% return · CAGR +6.6% · **Sharpe 1.58** · **max drawdown −1.1%** · 21 trades · **100% rule-adherence**
+> — bred by the GA across 7 generations (gen 0 → 6: 48 trades/−12% DD refined down to 21 trades/−1.1% DD).
+
+See `strategies/sample-champion.json` + `strategies/sample-champion-report.md`.
+
 ## Why this wins
 
 - **Originality** — evolutionary search over an LLM-authored strategy DSL, not single-shot generation. The GA *breeds* hybrids (e.g. "Golden Cross × RSI Reversion").

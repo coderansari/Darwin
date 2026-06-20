@@ -20,6 +20,8 @@ for _d in (DATA_DIR, REPORTS_DIR, RUNS_DIR):
 @dataclass(frozen=True)
 class Settings:
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
+    # Optional custom endpoint for an Anthropic-compatible gateway (e.g. DGRID).
+    anthropic_base_url: str = os.getenv("ANTHROPIC_BASE_URL", "")
     model: str = os.getenv("DARWIN_MODEL", "claude-sonnet-4-6")
     cmc_api_key: str = os.getenv("CMC_PRO_API_KEY", "")
     bsc_private_key: str = os.getenv("BSC_PRIVATE_KEY", "")

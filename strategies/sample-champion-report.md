@@ -1,71 +1,111 @@
 # Darwin — Champion Strategy Report
 
-**Golden Cross 20/50 x RSI Reversion 14 x Golden Cross 20/50 x RSI Reversion 14 #8550**  `[82497015bdd5]`
+**Dual-MA Trend Follower v2 - Regime Filtered x Dual-MA Trend Follower v2 - Regime Filter x Dual-MA Trend Follower v2 - Regime Filtered x ROC Momentum Pulse x ROC Momentum Pulse #9951**  `[10966ca20775]`
 
-> ride medium-term trends via EMA crossover
+> Adds a 100-period EMA macro-regime filter and MACD confirmation to eliminate counter-trend entries during sustained bear phases, reducing drawdown and improving trade quality at the cost of fewer but higher-conviction signals.
 
-- Universe: `BTC, ETH, BNB, SOL`  ·  Timeframe: `1d`
-- Data: synthetic  ·  Bars: 500
-- Evolution: 7 generations · 123 unique specs evaluated
-- Claude operators: off
+- Universe: `BTC, ETH, BNB, SOL, XRP, ADA, DOGE, LINK`  ·  Timeframe: `1d`
+- Data: CMC OHLCV (live)  ·  Bars: 700
+- Evolution: 7 generations · 129 unique specs evaluated
+- Claude operators: on
 
 ## Performance
 
 | Metric | Value |
 | --- | --- |
-| Total return | +31.8% |
-| CAGR | +22.4% |
-| Sharpe | 1.80 |
-| Sortino | 2.32 |
-| Max drawdown | -7.0% |
-| Calmar | 3.22 |
-| Win rate | 64% |
-| Trades | 14 |
-| Exposure | 38% |
+| Total return | +13.1% |
+| CAGR | +6.6% |
+| Sharpe | 1.58 |
+| Sortino | 1.02 |
+| Max drawdown | -1.1% |
+| Calmar | 6.07 |
+| Win rate | 67% |
+| Trades | 21 |
+| Exposure | 2% |
 | Rule adherence | 100% |
-| Fitness | 1.335 |
+| Fitness | 0.851 |
 
 Equity curve:
 ```
-▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▂▂▂▂▂▂▂▂▂▂▁▁▁▁▁▁▂▂▃▃▃▃▃▅▅▅▆▆▆▆▆▆▆▆▆▆▆▆▇█
-$10,000  →  $13,184
+▁▁▁▁▁▁▁▁▁▁▁▅▅▅▅▅▅▆▆▆▆▆▆▆▆▆▆▇▇▇▇▇▇▇▇▇▇▇▇▇█████████▇▇▇▇▇▇▇▇▇▇▇▇▇▇▇
+$10,000  →  $11,307
 ```
 
 ## Fitness progression (best per generation)
-`+0.04 → +0.76 → +0.76 → +0.79 → +1.03 → +1.04 → +1.34`
+`+0.11 → +0.18 → +0.20 → +0.76 → +0.77 → +0.77 → +0.85`
 
 ## Hall of fame
-1. Golden Cross 20/50 x RSI Reversion 14 x Golden Cross 20/50 x RSI Reversion 14 #8550 [82497015bdd5] ret=+31.8% cagr=+22.4% sharpe=1.80 maxDD=-7.0% trades=14 adher=100% fit=1.335
-2. Golden Cross 20/50 x Trend Pullback #9134 [a5ec35485b1f] ret=+19.2% cagr=+13.7% sharpe=1.55 maxDD=-4.7% trades=15 adher=100% fit=1.074
-3. Golden Cross 20/50 x RSI Reversion 14 x Golden Cross 20/50 x RSI Reversion 14 #7307 [7e489d7ebfc0] ret=+24.3% cagr=+17.2% sharpe=1.47 maxDD=-7.6% trades=15 adher=100% fit=1.044
-4. Golden Cross 20/50 x Trend Pullback #6660 [22925a7b12ef] ret=+18.3% cagr=+13.1% sharpe=1.49 maxDD=-4.8% trades=15 adher=100% fit=1.030
-5. Golden Cross 20/50 x Trend Pullback #4435 [075abde4a22a] ret=+18.3% cagr=+13.1% sharpe=1.49 maxDD=-4.8% trades=15 adher=100% fit=1.030
+1. Dual-MA Trend Follower v2 - Regime Filtered x Dual-MA Trend Follower v2 - Regime Filter x Dual-MA Trend Follower v2 - Regime Filtered x ROC Momentum Pulse x ROC Momentum Pulse #9951 [10966ca20775] ret=+13.1% cagr=+6.6% sharpe=1.58 maxDD=-1.1% trades=21 adher=100% fit=0.851
+2. Dual-MA Trend Follower v2 - Regime Filtered x Dual-MA Trend Follower v2 - Regime Filtered x ROC Momentum Pulse x ROC Momentum Pulse #2355 [94d3e4eb1b1f] ret=+15.1% cagr=+7.6% sharpe=1.64 maxDD=-1.9% trades=33 adher=100% fit=0.773
+3. Dual-MA Trend Follower v2 - Regime Filtered x Dual-MA Trend Follower v2 - Regime Filtered x ROC Momentum Pulse x ROC Momentum Pulse x Dual-MA Trend Follower v2 - Regime Filtered x Dual-MA Trend Follower v2 - Regime Filtered x ROC Momentum Pulse x ROC Momentum Pulse #9009 [65f27de25b9f] ret=+15.1% cagr=+7.6% sharpe=1.64 maxDD=-1.9% trades=33 adher=100% fit=0.773
+4. Dual-MA Trend Follower v2 - Regime Filtered x ROC Momentum Pulse x ROC Momentum Pulse #6709 [804e6b99443e] ret=+13.1% cagr=+6.7% sharpe=1.56 maxDD=-1.9% trades=30 adher=100% fit=0.762
+5. Dual-MA Trend Follower v3 - Momentum Breakout x Dual-MA Trend Follower v2 - Regime Filtered x Dual-MA Trend Follower v2 - Regime Filtered x ROC Momentum Pulse x ROC Momentum Pulse #5717 [05673a319008] ret=+10.4% cagr=+5.3% sharpe=1.31 maxDD=-1.6% trades=26 adher=100% fit=0.677
 
 ## Champion spec (backtestable, executable)
 ```json
 {
-  "name": "Golden Cross 20/50 x RSI Reversion 14 x Golden Cross 20/50 x RSI Reversion 14 #8550",
+  "name": "Dual-MA Trend Follower v2 - Regime Filtered x Dual-MA Trend Follower v2 - Regime Filter x Dual-MA Trend Follower v2 - Regime Filtered x ROC Momentum Pulse x ROC Momentum Pulse #9951",
   "universe": [
     "BTC",
     "ETH",
     "BNB",
-    "SOL"
+    "SOL",
+    "XRP",
+    "ADA",
+    "DOGE",
+    "LINK"
   ],
   "timeframe": "1d",
   "indicators": [
     {
-      "id": "ma_fast",
+      "id": "ema_fast",
       "type": "EMA",
-      "period": 31,
+      "period": 12,
       "source": "close",
       "fast": 12,
       "slow": 26,
       "signal": 9
     },
     {
-      "id": "ma_slow",
+      "id": "ema_slow",
       "type": "EMA",
-      "period": 52,
+      "period": 40,
+      "source": "close",
+      "fast": 12,
+      "slow": 26,
+      "signal": 9
+    },
+    {
+      "id": "ema_regime",
+      "type": "EMA",
+      "period": 100,
+      "source": "close",
+      "fast": 12,
+      "slow": 26,
+      "signal": 9
+    },
+    {
+      "id": "rsi14",
+      "type": "RSI",
+      "period": 14,
+      "source": "close",
+      "fast": 12,
+      "slow": 26,
+      "signal": 9
+    },
+    {
+      "id": "macd",
+      "type": "MACD",
+      "period": 14,
+      "source": "close",
+      "fast": 12,
+      "slow": 26,
+      "signal": 9
+    },
+    {
+      "id": "macd_sig",
+      "type": "MACD_SIGNAL",
+      "period": 14,
       "source": "close",
       "fast": 12,
       "slow": 26,
@@ -73,35 +113,70 @@ $10,000  →  $13,184
     }
   ],
   "entry": {
-    "any": [
+    "all": [
       {
-        "left": "ma_fast",
+        "left": "ema_fast",
         "op": "cross_above",
-        "right": "ma_slow"
+        "right": "ema_slow"
+      },
+      {
+        "left": "close",
+        "op": ">",
+        "right": "ema_regime"
+      },
+      {
+        "left": "rsi14",
+        "op": ">",
+        "right": 45
+      },
+      {
+        "left": "rsi14",
+        "op": ">",
+        "right": 58.309
+      },
+      {
+        "left": "macd",
+        "op": ">",
+        "right": "macd_sig"
       }
     ]
   },
   "exit": {
     "any": [
       {
-        "left": "ma_fast",
+        "left": "ema_fast",
+        "op": "cross_below",
+        "right": "ema_slow"
+      },
+      {
+        "left": "close",
+        "op": "<",
+        "right": "ema_regime"
+      },
+      {
+        "left": "rsi14",
+        "op": ">",
+        "right": 80
+      },
+      {
+        "left": "macd",
         "op": "cross_above",
-        "right": "ma_slow"
+        "right": "macd_sig"
       }
     ]
   },
   "risk": {
-    "max_position_pct": 0.317,
-    "max_open_positions": 2,
-    "stop_loss_pct": 0.086,
-    "take_profit_pct": 0.15,
-    "max_drawdown_pct": 0.3,
-    "trailing_stop_pct": 0.0
+    "max_position_pct": 0.15,
+    "max_open_positions": 4,
+    "stop_loss_pct": 0.08,
+    "take_profit_pct": 0.28,
+    "max_drawdown_pct": 0.25,
+    "trailing_stop_pct": 0.007
   },
   "sizing": {
     "type": "equal_weight",
     "fraction": 0.2
   },
-  "rationale": "ride medium-term trends via EMA crossover"
+  "rationale": "Adds a 100-period EMA macro-regime filter and MACD confirmation to eliminate counter-trend entries during sustained bear phases, reducing drawdown and improving trade quality at the cost of fewer but higher-conviction signals."
 }
 ```

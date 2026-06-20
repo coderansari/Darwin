@@ -64,20 +64,38 @@ def load_market_data(
     timeframe: str = "1d",
     force_synthetic: bool = False,
 ) -> dict[str, pd.DataFrame]:
-    """Return {symbol -> OHLCV DataFrame}. Falls back to synthetic on any failure."""
-    if force_synthetic or not settings.has_cmc:
+    """Return {symbol -> OHLCV DataFrame}. Source preference:
+    CoinMarketCap OHLCV (paid tier) -> Binance public klines -> deterministic synthetic.
+    """
+    if force_synthetic:
         return {s: synthetic_ohlcv(s, count, timeframe) for s in symbols}
 
+    from .binance import binance_klines
+
+    cmc = None
+    if settings.has_cmc:
+        try:
+            cmc = CMCClient()
+        except CMCError:
+            cmc = None
     time_period, interval = _TIMEFRAME_TO_CMC.get(timeframe, ("daily", "daily"))
-    client = CMCClient()
+
     out: dict[str, pd.DataFrame] = {}
     for s in symbols:
-        try:
-            df = client.ohlcv_historical(s, count=count, time_period=time_period, interval=interval)
-            out[s] = df if not df.empty else synthetic_ohlcv(s, count, timeframe)
-        except CMCError as e:
-            print(f"[data] CMC fetch failed for {s} ({e}); using synthetic")
-            out[s] = synthetic_ohlcv(s, count, timeframe)
+        df = None
+        if cmc is not None:
+            try:
+                got = cmc.ohlcv_historical(s, count=count, time_period=time_period, interval=interval)
+                df = got if not got.empty else None
+            except CMCError:
+                df = None
+        if df is None:
+            try:
+                got = binance_klines(s, count=count, timeframe=timeframe)
+                df = got if not got.empty else None
+            except Exception:
+                df = None
+        out[s] = df if df is not None else synthetic_ohlcv(s, count, timeframe)
     return out
 
 
