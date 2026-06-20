@@ -40,13 +40,13 @@ Evolved on **live CoinMarketCap data** (2yr OHLCV + Fear & Greed) with Claude
 
 See `strategies/sample-champion.json` + `strategies/sample-champion-report.md`.
 
-## Why this wins
+## Highlights
 
-- **Originality** — evolutionary search over an LLM-authored strategy DSL, not single-shot generation. The GA *breeds* hybrids (e.g. "Golden Cross × RSI Reversion").
-- **Technical execution** — a real, deterministic, **lookahead-free** backtester with PancakeSwap-realistic costs. It survives adversarial scrutiny: we caught and killed a classic GA reward-hacking exploit (same-bar fills + zero costs) — see `darwin/strategy/backtest.py`.
-- **Optimizes the rubric** — fitness rewards Sortino + capped return, penalizes drawdown, **squares rule-adherence**, and penalizes turnover. The winners are coherent, low-churn, risk-respecting strategies.
-- **Real CMC signal usage** — blends RSI, **MACD**, and the **CMC Fear & Greed Index** into entry/exit rules (the Track-2 example archetype, shipped as a seed).
-- **Full sponsor stack** — CMC Agent Hub (data + signal), BNB AI Agent SDK (on-chain identity), Trust Wallet Agent Kit (execution).
+- **Evolutionary, not single-shot** — population search over an LLM-authored strategy DSL; the GA *breeds* hybrids (e.g. "Golden Cross × RSI Reversion") instead of emitting one prompt-generated strategy.
+- **Deterministic, lookahead-free backtester** — execution at next-bar open, no same-bar fills, PancakeSwap-realistic fees + slippage. Hardened against optimizer reward-hacking (over-trading, compounding flukes, rule-fighting) — see `darwin/strategy/backtest.py`.
+- **Risk-aware fitness** — Sortino + Sharpe (clamped), drawdown penalty, squared rule-adherence, turnover and min-trade penalties. Champions are coherent, low-churn, and risk-respecting.
+- **CMC signals in the rules** — blends RSI, MACD, and the CoinMarketCap Fear & Greed Index into entry/exit conditions.
+- **Full stack** — CMC Agent Hub (data + signal), BNB AI Agent SDK (on-chain identity), Trust Wallet Agent Kit (execution).
 
 ## Quickstart
 
