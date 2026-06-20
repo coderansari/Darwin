@@ -1,0 +1,15 @@
+# secrets
+.env
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# darwin artifacts
+data/cache/
+reports/
+runs/
+*.log

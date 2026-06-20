@@ -1,0 +1,61 @@
+{
+  "name": "Golden Cross 20/50 x RSI Reversion 14 x Golden Cross 20/50 x RSI Reversion 14 #8550",
+  "universe": [
+    "BTC",
+    "ETH",
+    "BNB",
+    "SOL"
+  ],
+  "timeframe": "1d",
+  "indicators": [
+    {
+      "id": "ma_fast",
+      "type": "EMA",
+      "period": 31,
+      "source": "close",
+      "fast": 12,
+      "slow": 26,
+      "signal": 9
+    },
+    {
+      "id": "ma_slow",
+      "type": "EMA",
+      "period": 52,
+      "source": "close",
+      "fast": 12,
+      "slow": 26,
+      "signal": 9
+    }
+  ],
+  "entry": {
+    "any": [
+      {
+        "left": "ma_fast",
+        "op": "cross_above",
+        "right": "ma_slow"
+      }
+    ]
+  },
+  "exit": {
+    "any": [
+      {
+        "left": "ma_fast",
+        "op": "cross_above",
+        "right": "ma_slow"
+      }
+    ]
+  },
+  "risk": {
+    "max_position_pct": 0.317,
+    "max_open_positions": 2,
+    "stop_loss_pct": 0.086,
+    "take_profit_pct": 0.15,
+    "max_drawdown_pct": 0.3,
+    "trailing_stop_pct": 0.0
+  },
+  "sizing": {
+    "type": "equal_weight",
+    "fraction": 0.2
+  },
+  "rationale": "ride medium-term trends via EMA crossover"
+}
