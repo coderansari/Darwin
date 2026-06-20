@@ -122,5 +122,3 @@ scripts/      smoke + evolution tests, demo
 python -m scripts.smoke_test     # deterministic core on synthetic data
 python -m scripts.evolve_test    # offline GA convergence
 ```
-
-Built with Claude Code. AI tooling encouraged — *"we care that it works, not how it was written."*
