@@ -1,15 +1,15 @@
 # 🧬 Darwin — an evolutionary trading-strategy foundry for BNB Chain
 
-> **BNB Hack: AI Trading Agent Edition** — Track 2 (Strategy Skills)
-> Targeting: Track 2 placement · **Best Use of CMC Agent Hub** · **Best Use of BNB AI Agent SDK**
+> **BNB Hack: AI Trading Agent Edition** — built for Track 2 (Strategy Skills).
+> Also exercises the CoinMarketCap Agent Hub and the BNB AI Agent SDK.
 
-Most "AI strategy" tools do one thing: prompt an LLM once and print a strategy.
-**Darwin breeds a population of them.** It pulls CoinMarketCap market data and
-signals, generates a population of *backtestable strategy specs* with Claude,
-scores each on a deterministic backtester using the **judges' exact rubric**
-(risk-adjusted return, drawdown, **rule adherence**), and **evolves** the
-survivors across generations into a champion — which it can then execute on BSC
-via the Trust Wallet Agent Kit and register on-chain via the BNB AI Agent SDK.
+A common approach for "AI strategy" tools is to prompt an LLM once and return a
+single strategy. Darwin takes a different path: it evolves a *population*. It pulls
+CoinMarketCap market data and signals, generates candidate *backtestable strategy
+specs* with an LLM, scores each on a deterministic backtester (risk-adjusted return,
+drawdown, and adherence to user-defined risk rules), and evolves the survivors across
+generations into a champion — which can then execute on BSC via the Trust Wallet
+Agent Kit and register an on-chain identity via the BNB AI Agent SDK.
 
 ```
                     ┌──────────────────────── DARWIN ────────────────────────┐
@@ -79,26 +79,19 @@ python -m darwin.cli register --name darwin-foundry
 
 ## The three sponsor integrations
 
-### 🧠 CoinMarketCap AI Agent Hub — *Best Use of Agent Hub*
+### 🧠 CoinMarketCap AI Agent Hub
 - `darwin/cmc/client.py`: historical **OHLCV** (`/v2/cryptocurrency/ohlcv/historical`), latest quotes, and CMC's proprietary **Fear & Greed Index** (`/v3/fear-and-greed`).
 - The Fear & Greed Index is a first-class **signal source** (`fgi`) in the strategy DSL — strategies gate entries/exits on sentiment regime.
 - Strategies are authored as a **CMC Skill** (`skill/SKILL.md`) — the marketplace-native deliverable format.
 
-### 🛠️ BNB AI Agent SDK — *Best Use of BNB AI Agent SDK*
-- `darwin/identity/bnb.py`: registers Darwin's verifiable **ERC-8004 on-chain identity** on BSC testnet via the official `bnbagent` SDK (gas-sponsored). The agent's identity references the strategy it evolved.
+### 🛠️ BNB AI Agent SDK
+- `darwin/identity/bnb.py`: registers Darwin's verifiable **ERC-8004 on-chain identity** on BSC testnet via the official `bnbagent` SDK (gas-sponsored).
+- **Live on-chain proof:** agentId `1467`, registry `0x8004A818BFB912233c491871b3d84c89A494BD9e` —
+  [tx on BSC testnet](https://testnet.bscscan.com/tx/0x8f3c609817ab889d7160d3b4583e4d757bae873456b885d219cf3163ed8fdc7a).
 
 ### 🔐 Trust Wallet Agent Kit
 - `darwin/execute/twak_gateway.py`: a **live HMAC-authenticated** client for the TWAK API gateway (`tws.trustwallet.com`). It signs requests correctly (RFC-2822 date, sorted-query `METHOD;PATH;QUERY;ACCESS_ID;NONCE;DATE`), resolves BSC assets live via `/v1/search/assets`, and structures PancakeSwap route requests (`/amber-api/v1/route`).
-- *Status:* auth + live BSC asset resolution are confirmed working with portal creds; the swap-route computation is gated by Trust Wallet's backend (entitlement on the free portal tier). `execute` falls back cleanly. The "Best Use of TWAK" special prize is Track-1-scoped (live autonomous execution), so it isn't our target — but the integration is real.
-
-## How it maps to Track 2 judging
-
-| Criterion | Darwin |
-| --- | --- |
-| **Technical execution** | deterministic, lookahead-free backtester; real CMC + BNB on-chain integration; reproducible runs |
-| **Originality** | evolutionary population search over an LLM-authored DSL; breeds strategy hybrids |
-| **Real-world relevance** | a quant/agent-builder gets a backtested, rule-respecting spec ready to execute; the Skill is installable |
-| **Demo** | one command evolves a champion and emits a full report; see `DEMO.md` |
+- *Status:* auth + live BSC asset resolution work with portal credentials; the swap-route computation currently returns a server-side error on the free portal tier, so `execute` shows a dry-run plan. The "Best Use of TWAK" prize is Track-1-scoped (live autonomous execution), so here TWAK is a supporting integration rather than the focus.
 
 ## Repo layout
 
@@ -106,10 +99,10 @@ python -m darwin.cli register --name darwin-foundry
 darwin/
   strategy/   spec DSL, indicators (incl. MACD), backtester, metrics
   cmc/        CoinMarketCap client (OHLCV, quotes, Fear & Greed)
-  evolve/     seeds, deterministic GA operators, Claude operators, engine
+  evolve/     seeds, deterministic GA operators, LLM operators, engine
   execute/    TWAK gateway + execution adapter
   identity/   BNB ERC-8004 on-chain identity
-  report.py   judge-ready run reports
+  report.py   readable run reports
   cli.py      evolve / backtest / execute / register
 skill/        SKILL.md — the installable CMC Skill (Track 2 deliverable)
 strategies/   a sample evolved champion + its report

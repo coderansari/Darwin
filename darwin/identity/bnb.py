@@ -19,7 +19,7 @@ import json
 from ..config import RUNS_DIR, settings
 
 IDENTITY_FILE = RUNS_DIR / "identity.json"
-DEFAULT_ENDPOINT = "https://github.com/your-org/darwin"
+DEFAULT_ENDPOINT = "https://github.com/coderansari/Darwin"
 
 
 def _build_agent():
