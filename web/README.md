@@ -26,6 +26,24 @@ python -m scripts.export_dashboard   # writes web/public/data/darwin.json
 
 Then rebuild (`npm run build`) — the JSON is baked into the static page.
 
+## Live features (optional)
+
+The dashboard is fully static by default. Two optional **server-side** routes add
+live touches — both read keys server-side only (never shipped to the browser):
+
+- **`POST /api/evolve`** — the "Evolve live" button. Runs Claude as the GA's real
+  mutate operator on the locked champion and returns a fresh, validated strategy spec.
+  Honors `ANTHROPIC_API_KEY`, optional `ANTHROPIC_BASE_URL` (e.g. the DGRID gateway),
+  and `DARWIN_MODEL` (defaults to `claude-opus-4-8`).
+- **`GET /api/sentiment`** — the live Fear & Greed badge. Server-side CMC fetch via
+  `CMC_PRO_API_KEY`.
+
+Configure locally in `web/.env.local` (git-ignored; see `.env.example`). If keys are
+absent, the routes degrade gracefully and the dashboard stays fully static.
+
+> ⚠️ Never set `NEXT_PUBLIC_` on these — that exposes the key. Never deploy
+> `BSC_PRIVATE_KEY` or TWAK secrets to the web app.
+
 ## Deploy to Vercel
 
 1. Push the repo to GitHub.

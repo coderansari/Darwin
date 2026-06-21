@@ -9,6 +9,8 @@ import { EvolutionTimeline } from "@/components/EvolutionTimeline";
 import { FearGreedGauge } from "@/components/FearGreedGauge";
 import { OnChainCard } from "@/components/OnChainCard";
 import { SponsorStrip } from "@/components/SponsorStrip";
+import { LiveEvolve } from "@/components/LiveEvolve";
+import { LiveSentimentBadge } from "@/components/LiveSentimentBadge";
 import { Reveal } from "@/components/ui/Reveal";
 import { data } from "@/lib/data";
 
@@ -76,6 +78,11 @@ export default function Page() {
         intro={`Most "AI strategy" tools prompt an LLM once. Darwin evolves a population: select, crossover, mutate, repeat. Over ${meta.generations} generations the GA refined a high-churn idea into a low-drawdown champion.`}
       >
         <EvolutionTimeline history={history} />
+        <div className="mt-5">
+          <Reveal>
+            <LiveEvolve />
+          </Reveal>
+        </div>
       </Section>
 
       <Section
@@ -84,6 +91,11 @@ export default function Page() {
         title="Sentiment, not just price"
         intro="The CoinMarketCap Fear & Greed Index feeds directly into the strategy rules."
       >
+        <div className="mb-5">
+          <Reveal>
+            <LiveSentimentBadge />
+          </Reveal>
+        </div>
         <FearGreedGauge fg={fearGreed} />
       </Section>
 
