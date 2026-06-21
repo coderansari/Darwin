@@ -35,7 +35,7 @@ export function Hero({
           className="max-w-3xl"
         >
           <div className="mb-6 flex flex-wrap items-center gap-2.5">
-            <Pill className="border-gold/25 bg-gold/[0.07] text-gold-soft">🧬 BNB Hack · Track 2</Pill>
+            <Pill className="border-gold/25 bg-gold/[0.07] text-gold-soft">BNB Hack · Track 2</Pill>
             {live ? <LiveBadge /> : <Pill>Synthetic demo data</Pill>}
           </div>
 
