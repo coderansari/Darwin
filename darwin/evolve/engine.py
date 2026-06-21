@@ -86,6 +86,11 @@ class Evolver:
         out.sort(key=lambda r: r.fitness, reverse=True)
         return out
 
+    def evaluated_specs(self) -> list[StrategySpec]:
+        """Every unique spec the GA scored on train — the full candidate pool for
+        out-of-sample selection (far more diverse than the train-fitness top-k)."""
+        return [r.spec for r in self._cache.values()]
+
     # ---- population --------------------------------------------------------
 
     def _init_population(self, universe: list[str], context: str | None) -> list[StrategySpec]:

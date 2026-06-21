@@ -24,8 +24,11 @@ from typing import Any
 
 INDICATOR_TYPES = {"SMA", "EMA", "RSI", "ATR", "ROC", "PRICE", "MACD", "MACD_SIGNAL", "MACD_HIST"}
 PRICE_SOURCES = {"open", "high", "low", "close", "volume"}
-# Market-wide signals injected by the backtester (e.g. CMC Fear & Greed Index).
-SIGNAL_SOURCES = {"fgi"}
+# Market-wide signals injected by the backtester. `fgi` = CMC Fear & Greed Index;
+# `mom` = cross-sectional market momentum (mean trailing return, %); `breadth` =
+# % of the universe trading above its 50-bar trend. mom/breadth are derived from
+# CMC OHLCV so strategies can gate on market regime, not just price + sentiment.
+SIGNAL_SOURCES = {"fgi", "mom", "breadth"}
 OPERATORS = {">", "<", ">=", "<=", "cross_above", "cross_below"}
 COMBINATORS = {"all", "any"}
 SIZING_TYPES = {"equal_weight", "fixed_fraction"}
@@ -229,7 +232,8 @@ Rules:
 - MACD/MACD_SIGNAL/MACD_HIST use fast/slow/signal (default 12/26/9), not period. Cross MACD over MACD_SIGNAL for classic signals.
 - A condition is either {"all":[...]}, {"any":[...]}, or a leaf {"left","op","right"}.
 - op in {">","<",">=","<=","cross_above","cross_below"}.
-- left/right are either an indicator id, a price source (open/high/low/close/volume), or a number.
+- left/right are either an indicator id, a price source (open/high/low/close/volume), a market signal, or a number.
+- Market signals (CoinMarketCap-derived, usable in any condition): "fgi" = Fear & Greed Index (0-100), "mom" = market momentum (mean trailing % return across the universe, ~ -50..50), "breadth" = % of the universe above its 50-bar trend (0-100). Use them for regime filters (e.g. only go long when breadth > 50, avoid entries in extreme fear, trim when mom is strongly negative).
 - Strategies are LONG/FLAT only. Entry opens, exit (or a risk rule) closes.
 - Keep it simple and economically sensible; the backtester is strict and deterministic.
 """

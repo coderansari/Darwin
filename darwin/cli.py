@@ -15,11 +15,12 @@ import sys
 
 from . import report
 from .config import settings
-from .data_source import load_market_data, load_signals
+from .data_source import derive_market_signals, load_market_data, load_signals
 from .evolve.engine import EvolutionConfig, Evolver
 from .evolve.generate import StrategyGenerator, market_context
 from .strategy.backtest import run_backtest
 from .strategy.spec import StrategySpec
+from .validation import DEFAULT_SPLITS, evaluate_oos, select_by_validation, train_split
 
 
 def _print(msg: str) -> None:
@@ -49,6 +50,7 @@ def cmd_evolve(args: argparse.Namespace) -> int:
 
     # CMC Fear & Greed signal (proprietary CMC data) -> regime context + condition source.
     signals = load_signals(count=args.bars, timeframe=args.timeframe, force_synthetic=syn)
+    signals.update(derive_market_signals(data))  # mom + breadth regime signals (CMC-derived)
     fgi_now = float(signals["fgi"].iloc[-1])
     fg_latest = {"value": int(round(fgi_now)), "value_classification": _fg_class(fgi_now)}
     _print(f"  Fear & Greed ({sig_src}): {fg_latest['value']} ({fg_latest['value_classification']})")
@@ -61,7 +63,11 @@ def cmd_evolve(args: argparse.Namespace) -> int:
     cfg = EvolutionConfig(
         generations=args.generations, pop_size=args.pop, elite=args.elite, seed=args.seed
     )
-    evolver = Evolver(data, signals=signals, generator=generator, config=cfg)
+
+    # Out-of-sample discipline: evolve on TRAIN only; validation/test stay unseen.
+    train_data, train_sig, t1, t2 = train_split(data, signals, DEFAULT_SPLITS)
+    _print(f"  Split: train < {t1.date()}  | validation < {t2.date()}  | test = held out")
+    evolver = Evolver(train_data, signals=train_sig, generator=generator, config=cfg)
 
     def on_gen(gen, partial, ranked):
         h = partial.history[-1]
@@ -70,14 +76,29 @@ def cmd_evolve(args: argparse.Namespace) -> int:
     _print("")
     result = evolver.evolve(universe, context=context, on_generation=on_gen)
 
+    # Select the champion that GENERALIZES best (validation fitness over the FULL
+    # evaluated pool, not just the train-overfit top-k). The test window stays unseen.
+    candidates = evolver.evaluated_specs() or [result.champion.spec]
+    champ_spec, _ = select_by_validation(candidates, data, signals, DEFAULT_SPLITS)
+    oos = evaluate_oos(champ_spec, data, signals, DEFAULT_SPLITS, with_full=True)
+
+    _print("")
+    _print("Out-of-sample validation (evolved on train, selected on validation):")
+    for label, r in [("  train ", oos.train), ("  valid ", oos.validation), ("  TEST  ", oos.test)]:
+        m = r.metrics
+        _print(
+            f"{label} ret={m.total_return:+.1%}  sharpe={m.sharpe:.2f}  "
+            f"maxDD={m.max_drawdown:.1%}  trades={m.num_trades}  adher={m.rule_adherence:.0%}"
+        )
+
     meta = {
         "data_source": data_src,
         "bars": args.bars,
         "llm": llm_state,
     }
-    run_dir = report.render(result, meta=meta)
+    run_dir = report.render(result, meta=meta, oos=oos)
     _print("")
-    _print(f"CHAMPION: {result.champion.summary()}")
+    _print(f"CHAMPION (held-out TEST): {oos.test.summary()}")
     _print(f"Report:   {run_dir / 'report.md'}")
     _print(f"Spec:     {run_dir / 'champion.json'}")
     return 0
@@ -87,7 +108,9 @@ def cmd_backtest(args: argparse.Namespace) -> int:
     spec = StrategySpec.from_json(open(args.spec, encoding="utf-8").read())
     force_syn = args.synthetic or not settings.has_cmc
     data = load_market_data(spec.universe, count=args.bars, timeframe=spec.timeframe, force_synthetic=force_syn)
-    result = run_backtest(spec, data)
+    signals = load_signals(count=args.bars, timeframe=spec.timeframe, force_synthetic=force_syn)
+    signals.update(derive_market_signals(data))
+    result = run_backtest(spec, data, signals=signals)
     _print(result.summary())
     for k, v in result.metrics.as_dict().items():
         _print(f"  {k}: {v}")

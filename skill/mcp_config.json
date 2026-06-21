@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "darwin": {
+      "command": "python",
+      "args": ["-m", "darwin.mcp_server"],
+      "env": {
+        "CMC_PRO_API_KEY": "${CMC_PRO_API_KEY}",
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+        "ANTHROPIC_BASE_URL": "${ANTHROPIC_BASE_URL}",
+        "DARWIN_MODEL": "${DARWIN_MODEL}"
+      }
+    },
+    "cmc-mcp": {
+      "type": "http",
+      "url": "https://mcp.coinmarketcap.com/mcp",
+      "headers": {
+        "X-CMC-MCP-API-KEY": "${CMC_MCP_API_KEY}"
+      }
+    }
+  }
+}

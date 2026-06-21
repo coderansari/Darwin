@@ -12,13 +12,31 @@ import json
 from pathlib import Path
 
 from darwin.config import RUNS_DIR, settings
-from darwin.data_source import load_market_data, load_signals
+from darwin.data_source import derive_market_signals, load_market_data, load_signals
 from darwin.strategy.backtest import run_backtest
+from darwin.strategy.metrics import Metrics
 from darwin.strategy.spec import StrategySpec
+from darwin.validation import evaluate_holdout
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "web" / "public" / "data" / "darwin.json"
 CHAMPION = ROOT / "strategies" / "sample-champion.json"
+
+
+def _metrics_dict(m: Metrics) -> dict:
+    return {
+        "totalReturn": round(m.total_return, 4),
+        "cagr": round(m.cagr, 4),
+        "sharpe": round(m.sharpe, 2),
+        "sortino": round(m.sortino, 2),
+        "maxDrawdown": round(m.max_drawdown, 4),
+        "calmar": round(m.calmar, 2),
+        "winRate": round(m.win_rate, 3),
+        "numTrades": m.num_trades,
+        "exposure": round(m.exposure, 3),
+        "ruleAdherence": round(m.rule_adherence, 3),
+        "finalEquity": round(m.final_equity, 2),
+    }
 
 
 def _equity_points(equity, max_points: int = 140):
@@ -37,8 +55,14 @@ def main() -> None:
     syn = not settings.has_cmc
     data = load_market_data(spec.universe, count=700, force_synthetic=syn)
     signals = load_signals(count=700, force_synthetic=syn)
-    result = run_backtest(spec, data, signals=signals)
+    signals.update(derive_market_signals(data))  # CMC-derived mom + breadth regime signals
+
+    # In-sample vs out-of-sample holdout: design on the first half, forward-test on
+    # the held-out second half (warmup-aware, no look-ahead).
+    ho = evaluate_holdout(spec, data, signals, train_frac=0.5, with_full=True)
+    result = ho.full
     m = result.metrics
+    split = ho.split_date
 
     # Evolution history from the champion's run dir, if present.
     history = []
@@ -89,20 +113,13 @@ def main() -> None:
             "risk": spec.risk.__dict__,
             "sizing": spec.sizing.__dict__,
         },
-        "metrics": {
-            "totalReturn": round(m.total_return, 4),
-            "cagr": round(m.cagr, 4),
-            "sharpe": round(m.sharpe, 2),
-            "sortino": round(m.sortino, 2),
-            "maxDrawdown": round(m.max_drawdown, 4),
-            "calmar": round(m.calmar, 2),
-            "winRate": round(m.win_rate, 3),
-            "numTrades": m.num_trades,
-            "exposure": round(m.exposure, 3),
-            "ruleAdherence": round(m.rule_adherence, 3),
-            "finalEquity": round(m.final_equity, 2),
-        },
+        "metrics": _metrics_dict(m),
         "equity": _equity_points(result.equity),
+        "oos": {
+            "splitDate": str(split.date()),
+            "inSample": _metrics_dict(ho.in_sample.metrics),
+            "outOfSample": _metrics_dict(ho.out_sample.metrics),
+        },
         "history": history,
         "fearGreed": fg,
         "identity": identity,
@@ -111,6 +128,7 @@ def main() -> None:
             "universe": spec.universe,
             "bars": len(result.equity),
             "generations": len(history),
+            "oosStart": str(split.date()),
             "sponsors": {
                 "cmc": "live OHLCV + Fear & Greed",
                 "bnb": "ERC-8004 identity (gasless)",
@@ -123,7 +141,9 @@ def main() -> None:
     OUT.write_text(json.dumps(payload, indent=2))
     print(f"wrote {OUT}")
     print(f"  champion: {spec.name}")
-    print(f"  metrics : ret={m.total_return:+.1%} sharpe={m.sharpe:.2f} maxDD={m.max_drawdown:.1%} trades={m.num_trades}")
+    print(f"  full     : ret={m.total_return:+.1%} sharpe={m.sharpe:.2f} maxDD={m.max_drawdown:.1%} trades={m.num_trades}")
+    om = ho.out_sample.metrics
+    print(f"  OOS test : ret={om.total_return:+.1%} sharpe={om.sharpe:.2f} maxDD={om.max_drawdown:.1%} trades={om.num_trades} adher={om.rule_adherence:.0%} (held out after {split.date()})")
     print(f"  equity pts: {len(payload['equity'])} | history gens: {len(history)} | F&G: {fg['value']} ({fg['classification']})")
     print(f"  identity: agentId={identity.get('agentId')} tx={identity.get('txHash','')[:18]}...")
 

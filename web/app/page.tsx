@@ -9,13 +9,14 @@ import { EvolutionTimeline } from "@/components/EvolutionTimeline";
 import { FearGreedGauge } from "@/components/FearGreedGauge";
 import { OnChainCard } from "@/components/OnChainCard";
 import { SponsorStrip } from "@/components/SponsorStrip";
+import { OOSComparison } from "@/components/OOSComparison";
 import { LiveEvolve } from "@/components/LiveEvolve";
 import { LiveSentimentBadge } from "@/components/LiveSentimentBadge";
 import { Reveal } from "@/components/ui/Reveal";
 import { data } from "@/lib/data";
 
 export default function Page() {
-  const { champion, metrics, equity, history, fearGreed, identity, meta } = data;
+  const { champion, metrics, equity, oos, history, fearGreed, identity, meta } = data;
   const live = meta.dataSource.toLowerCase().includes("live");
 
   return (
@@ -33,7 +34,7 @@ export default function Page() {
         <div className="mt-5 grid gap-5 lg:grid-cols-5">
           <div className="lg:col-span-3">
             <Reveal>
-              <EquityChart equity={equity} />
+              <EquityChart equity={equity} oosStart={meta.oosStart} />
             </Reveal>
           </div>
           <div className="lg:col-span-2">
@@ -70,6 +71,12 @@ export default function Page() {
           <MetricsGrid metrics={metrics} />
         </div>
       </Section>
+
+      {oos && (
+        <Section id="validation" className="!pt-0">
+          <OOSComparison oos={oos} />
+        </Section>
+      )}
 
       <Section
         id="evolution"

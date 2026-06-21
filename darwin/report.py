@@ -54,15 +54,45 @@ def _metrics_table(r: BacktestResult) -> str:
     return "\n".join(out)
 
 
-def render(result: EvolutionResult, meta: dict | None = None, run_dir: Path | None = None) -> Path:
+def _oos_table(oos) -> str:
+    """In-sample (train) vs out-of-sample (validation / held-out TEST) comparison."""
+    rows = [("train (in-sample)", oos.train), ("validation", oos.validation), ("TEST (held-out)", oos.test)]
+    out = [
+        "| Window | Return | Sharpe | Sortino | Max DD | Trades | Adherence |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    for label, r in rows:
+        m = r.metrics
+        out.append(
+            f"| {label} | {m.total_return:+.1%} | {m.sharpe:.2f} | {m.sortino:.2f} | "
+            f"{m.max_drawdown:.1%} | {m.num_trades} | {m.rule_adherence:.0%} |"
+        )
+    return "\n".join(out)
+
+
+def render(result: EvolutionResult, meta: dict | None = None, run_dir: Path | None = None, oos=None) -> Path:
     meta = meta or {}
-    run_dir = run_dir or (RUNS_DIR / f"run_{result.champion.spec.fingerprint()}")
+    # When an OOS report is supplied, the champion is the validation-selected spec
+    # scored over the full continuous series.
+    champ = oos.full if (oos is not None and oos.full is not None) else result.champion
+    run_dir = run_dir or (RUNS_DIR / f"run_{champ.spec.fingerprint()}")
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    champ = result.champion
     (run_dir / "champion.json").write_text(champ.spec.to_json())
     champ.equity.to_csv(run_dir / "equity.csv", header=True)
     (run_dir / "history.json").write_text(json.dumps(result.history, indent=2))
+    if oos is not None:
+        (run_dir / "oos.json").write_text(
+            json.dumps(
+                {
+                    "split_dates": [str(d.date()) for d in oos.split_dates],
+                    "train": oos.train.metrics.as_dict(),
+                    "validation": oos.validation.metrics.as_dict(),
+                    "test": oos.test.metrics.as_dict(),
+                },
+                indent=2,
+            )
+        )
     (run_dir / "leaderboard.json").write_text(
         json.dumps(
             [{"summary": r.summary(), "spec": r.spec.to_dict(), "metrics": r.metrics.as_dict()}
@@ -92,7 +122,13 @@ Equity curve:
 {sparkline(champ.equity)}
 ${champ.equity.iloc[0]:,.0f}  →  ${champ.equity.iloc[-1]:,.0f}
 ```
-
+""" + (
+        f"\n## Out-of-sample validation\n\nEvolved on the train window, **selected on "
+        f"validation**, and reported on a **held-out TEST window the GA never saw** "
+        f"(split at {oos.split_dates[0].date()} / {oos.split_dates[1].date()}).\n\n"
+        f"{_oos_table(oos)}\n"
+        if oos is not None else ""
+    ) + f"""
 ## Fitness progression (best per generation)
 `{hist_line}`
 

@@ -1,0 +1,49 @@
+{
+  "name": "darwin-strategy-foundry",
+  "version": "1.0.0",
+  "title": "Darwin — Evolutionary Strategy Foundry",
+  "description": "Evolves a population of backtestable crypto trading strategies from CoinMarketCap data and returns an out-of-sample-validated champion spec. Track 2 (Strategy Skills): generates a backtestable spec, not a live agent.",
+  "category": "trading-strategy",
+  "tags": ["trading", "strategy", "backtest", "evolutionary", "sentiment", "risk", "BNB", "BSC"],
+  "license": "MIT",
+  "author": "Darwin",
+  "transport": "mcp",
+  "entrypoint": {
+    "type": "stdio",
+    "command": "python",
+    "args": ["-m", "darwin.mcp_server"]
+  },
+  "consumes": {
+    "cmc_mcp": ["quotes", "ohlcv", "fear-and-greed"],
+    "notes": "Uses CoinMarketCap OHLCV + Fear & Greed; derives market momentum and breadth regime signals."
+  },
+  "tools": [
+    {
+      "name": "evolve_strategy",
+      "description": "Evolve a champion strategy from CMC data with train/validation/held-out-test scoring.",
+      "inputs": {
+        "universe": "string (comma-separated CMC symbols)",
+        "generations": "integer",
+        "bars": "integer",
+        "use_llm": "boolean",
+        "synthetic": "boolean"
+      },
+      "outputs": {
+        "champion": "StrategySpec (backtestable JSON)",
+        "metrics": "in-sample (train) vs out-of-sample (validation, test)"
+      }
+    },
+    {
+      "name": "backtest_spec",
+      "description": "Backtest a StrategySpec on CMC data; deterministic, lookahead-free, fees + slippage.",
+      "inputs": { "spec_json": "string", "bars": "integer", "synthetic": "boolean" },
+      "outputs": { "metrics": "performance + risk metrics" }
+    },
+    {
+      "name": "spec_schema",
+      "description": "Return the StrategySpec DSL guide (valid indicators, signals, conditions, risk).",
+      "inputs": {},
+      "outputs": { "guide": "string" }
+    }
+  ]
+}

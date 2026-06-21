@@ -122,6 +122,29 @@ def synthetic_fgi(n: int = 500, timeframe: str = "1d") -> pd.Series:
     return pd.Series(vals, index=idx, name="fgi")
 
 
+def derive_market_signals(data: dict[str, pd.DataFrame]) -> dict[str, pd.Series]:
+    """Compute market-wide regime signals from CMC OHLCV (no extra API calls):
+
+    - `mom`     : cross-sectional momentum — mean trailing 30-bar % return across
+                  the universe (positive = broad uptrend).
+    - `breadth` : % of the universe trading above its own 50-bar SMA (market health).
+
+    Both are historical series, so strategies can gate entries/exits on regime and
+    the backtester scores them like any other signal.
+    """
+    frames = [df for df in data.values() if not df.empty]
+    if not frames:
+        return {}
+    idx = pd.DatetimeIndex(sorted(set().union(*[set(df.index) for df in frames])))
+    closes = pd.DataFrame(
+        {s: df["close"].reindex(idx).ffill() for s, df in data.items() if not df.empty}
+    )
+    mom = (closes.pct_change(30) * 100.0).mean(axis=1)
+    sma = closes.rolling(50, min_periods=10).mean()
+    breadth = (closes > sma).mean(axis=1) * 100.0
+    return {"mom": mom.rename("mom").fillna(0.0), "breadth": breadth.rename("breadth").fillna(50.0)}
+
+
 def load_signals(count: int = 500, timeframe: str = "1d", force_synthetic: bool = False) -> dict[str, pd.Series]:
     """Market-wide signals usable by strategy conditions. Always returns an `fgi`
     series (real CMC Fear & Greed when available, synthetic otherwise)."""

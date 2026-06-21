@@ -30,6 +30,15 @@ def main() -> None:
     for r in result.hall_of_fame[:5]:
         print(f"  {r.summary()}")
 
+    # Assertions — the GA must actually converge to a usable champion.
+    assert result.evaluated > 0, "no specs evaluated"
+    assert result.hall_of_fame, "empty hall of fame"
+    assert result.champion.fitness > 0, f"champion fitness not positive: {result.champion.fitness}"
+    assert result.champion.metrics.num_trades > 0, "champion never traded"
+    best_hist = result.history[-1]["best_fitness"]
+    assert best_hist >= result.history[0]["best_fitness"], "fitness did not improve over generations"
+    print("\nOK: evolve_test assertions passed.")
+
 
 if __name__ == "__main__":
     main()

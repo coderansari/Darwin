@@ -37,15 +37,19 @@ Evolved on **live CoinMarketCap data** (2yr OHLCV + Fear & Greed) with Claude
 > **Champion: Dual-MA Trend Follower (Regime-Filtered) × ROC Momentum Pulse**
 > +13.1% return · CAGR +6.6% · **Sharpe 1.58** · **max drawdown −1.1%** · 21 trades · **100% rule-adherence**
 > — bred by the GA across 7 generations (gen 0 → 6: 48 trades/−12% DD refined down to 21 trades/−1.1% DD).
+>
+> **Forward-tested out-of-sample:** designed on the first half of history, then run on a **held-out window it never saw** — it preserved capital with a **−1.0% max drawdown**, **100% rule-adherence**, and 7 trades. No overtrading, no blow-up in an unseen regime.
 
 See `strategies/sample-champion.json` + `strategies/sample-champion-report.md`.
 
 ## Highlights
 
+- **Out-of-sample validated, not curve-fit** — the champion is designed on a train window and forward-tested on a **held-out window it never saw** (`darwin/validation.py`). Most "AI strategy" demos report 100% in-sample numbers; Darwin shows the split.
 - **Evolutionary, not single-shot** — population search over an LLM-authored strategy DSL; the GA *breeds* hybrids (e.g. "Golden Cross × RSI Reversion") instead of emitting one prompt-generated strategy.
 - **Deterministic, lookahead-free backtester** — execution at next-bar open, no same-bar fills, PancakeSwap-realistic fees + slippage. Hardened against optimizer reward-hacking (over-trading, compounding flukes, rule-fighting) — see `darwin/strategy/backtest.py`.
 - **Risk-aware fitness** — Sortino + Sharpe (clamped), drawdown penalty, squared rule-adherence, turnover and min-trade penalties. Champions are coherent, low-churn, and risk-respecting.
-- **CMC signals in the rules** — blends RSI, MACD, and the CoinMarketCap Fear & Greed Index into entry/exit conditions.
+- **CMC signals in the rules** — blends RSI, MACD, the CoinMarketCap **Fear & Greed Index**, plus CMC-derived **market momentum** and **breadth** regime signals into entry/exit conditions.
+- **A callable Marketplace skill** — exposed as an MCP server (`darwin/mcp_server.py`, `skill/skill.json`) so any MCP client or the CMC Agent Hub can call `evolve_strategy` / `backtest_spec` and get an agent-ready, backtestable spec.
 - **Full stack** — CMC Agent Hub (data + signal), BNB AI Agent SDK (on-chain identity), Trust Wallet Agent Kit (execution).
 
 ## Quickstart
@@ -66,6 +70,9 @@ python -m darwin.cli execute --spec strategies/sample-champion.json
 
 # Register the agent's on-chain identity (BSC testnet, gas-sponsored):
 python -m darwin.cli register --name darwin-foundry
+
+# Serve Darwin as a callable CMC Skill (MCP) — evolve_strategy / backtest_spec:
+pip install "mcp>=1.2.0" && python -m darwin.mcp_server
 ```
 
 `.env` keys (all optional — Darwin falls back to deterministic synthetic data/operators so it always runs):
@@ -114,4 +121,5 @@ scripts/      smoke + evolution tests, demo
 ```bash
 python -m scripts.smoke_test     # deterministic core on synthetic data
 python -m scripts.evolve_test    # offline GA convergence
+python -m scripts.oos_test       # out-of-sample split is sound + lookahead-free
 ```

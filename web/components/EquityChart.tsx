@@ -4,6 +4,7 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -11,11 +12,21 @@ import {
 } from "recharts";
 import type { EquityPoint } from "@/lib/data";
 
-export function EquityChart({ equity, start = 10000 }: { equity: EquityPoint[]; start?: number }) {
+export function EquityChart({
+  equity,
+  start = 10000,
+  oosStart,
+}: {
+  equity: EquityPoint[];
+  start?: number;
+  oosStart?: string;
+}) {
   const last = equity[equity.length - 1]?.value ?? start;
   const min = Math.min(...equity.map((e) => e.value));
   const max = Math.max(...equity.map((e) => e.value));
   const up = last >= start;
+  // First equity point at/after the out-of-sample boundary (dates are downsampled).
+  const oosX = oosStart ? equity.find((e) => e.date >= oosStart)?.date : undefined;
 
   return (
     <div className="glass rounded-3xl p-5 sm:p-7">
@@ -78,6 +89,15 @@ export function EquityChart({ equity, start = 10000 }: { equity: EquityPoint[]; 
               isAnimationActive
               animationDuration={1400}
             />
+            {oosX && (
+              <ReferenceLine
+                x={oosX}
+                stroke="#F0B90B"
+                strokeDasharray="4 4"
+                strokeOpacity={0.7}
+                label={{ value: "out-of-sample →", position: "insideTopRight", fill: "#FCD34D", fontSize: 11 }}
+              />
+            )}
           </AreaChart>
         </ResponsiveContainer>
       </div>

@@ -147,12 +147,18 @@ def run_backtest(
     initial_cash: float = INITIAL_CASH,
     fee_pct: float = DEFAULT_FEE_PCT,
     slippage_pct: float = DEFAULT_SLIPPAGE_PCT,
+    trade_from: pd.Timestamp | None = None,
 ) -> BacktestResult:
     """Run `spec` against `data` (symbol -> OHLCV DataFrame, DatetimeIndex).
 
     `signals` is an optional map of market-wide series (e.g. {"fgi": <Fear&Greed
     series>}) that conditions may reference by name. `fee_pct`/`slippage_pct` are
     charged on every entry and exit leg.
+
+    `trade_from` enables warmup-aware out-of-sample testing: bars before it are
+    used only to warm up indicators (no trading), and the returned equity/metrics
+    start at `trade_from`. This lets a held-out test window be scored without a
+    cold-indicator start and without look-ahead into the training window.
     """
     spec.validate()
     cost_mult = fee_pct + slippage_pct
@@ -165,6 +171,12 @@ def run_backtest(
     # Master timeline = sorted union of all symbol timestamps.
     timeline = sorted(set().union(*[set(data[s].index) for s in symbols]))
     timeline = pd.DatetimeIndex(timeline)
+
+    # Warmup-aware scoring boundary: bars before `trade_from` warm up indicators
+    # but never trade or count toward equity/metrics.
+    start_idx = 0
+    if trade_from is not None and len(timeline):
+        start_idx = int(timeline.searchsorted(pd.Timestamp(trade_from)))
 
     # Per-symbol arrays aligned to the master timeline.
     opens, highs, lows, marks, entry_sig, exit_sig = {}, {}, {}, {}, {}, {}
@@ -237,7 +249,7 @@ def run_backtest(
                     close_position(s, opens[s][t], t, "signal")
 
         # (b) signal-driven entries at this bar's open.
-        if t > 0 and not halted:
+        if t > 0 and t >= start_idx and not halted:
             for s in symbols:
                 if s in positions:
                     continue
@@ -306,7 +318,10 @@ def run_backtest(
             exposure_bars += 1
         equity_curve[t] = mark_equity(t)
 
-    equity = pd.Series(equity_curve, index=timeline, name="equity")
+    equity_full = pd.Series(equity_curve, index=timeline, name="equity")
+    # Score only the post-warmup segment (no trades occur before start_idx, so the
+    # pre-segment equity is a flat initial_cash line we drop).
+    equity = equity_full.iloc[start_idx:] if start_idx else equity_full
     metrics = compute_metrics(
         equity, trades, spec.timeframe, rule_checks, rule_violations, exposure_bars
     )

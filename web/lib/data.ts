@@ -79,13 +79,21 @@ export interface Meta {
   universe: string[];
   bars: number;
   generations: number;
+  oosStart?: string;
   sponsors: { cmc: string; bnb: string; twak: string };
+}
+
+export interface OOS {
+  splitDate: string;
+  inSample: Metrics;
+  outOfSample: Metrics;
 }
 
 export interface DarwinData {
   champion: Champion;
   metrics: Metrics;
   equity: EquityPoint[];
+  oos?: OOS;
   history: Generation[];
   fearGreed: FearGreed;
   identity: Identity;

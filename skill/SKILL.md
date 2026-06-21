@@ -8,13 +8,31 @@ description: >-
   spec for BSC / crypto markets — blending indicators (SMA, EMA, RSI, MACD, ROC)
   with the CMC Fear & Greed sentiment signal into entry/exit rules.
 license: MIT
+allowed-tools: [evolve_strategy, backtest_spec, spec_schema]
 ---
 
 # Darwin — Strategy Foundry Skill
 
 A CMC Skill that authors **backtestable trading-strategy specs** from
 CoinMarketCap data. Darwin does not just generate one strategy — it *evolves a
-population* and returns the champion, with a full backtest report.
+population*, validates the champion **out-of-sample**, and returns it with a full
+backtest report.
+
+## Run as an MCP skill (marketplace-native)
+
+Darwin is callable from any MCP client (Claude Desktop, Cursor, the CMC Agent
+Hub `find_skill` router) — see `skill.json` and `mcp_config.json`.
+
+```bash
+pip install "mcp>=1.2.0"        # the optional `skill` extra
+python -m darwin.mcp_server      # exposes evolve_strategy / backtest_spec / spec_schema
+```
+
+Tools:
+- **`evolve_strategy`** — evolve a champion from CMC data with train / validation /
+  **held-out test** scoring. Returns the spec + in-sample vs out-of-sample metrics.
+- **`backtest_spec`** — backtest any StrategySpec (deterministic, lookahead-free).
+- **`spec_schema`** — return the StrategySpec DSL guide.
 
 ## When to use this skill
 

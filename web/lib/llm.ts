@@ -11,7 +11,7 @@ const INDICATOR_TYPES = new Set([
   "SMA", "EMA", "RSI", "ATR", "ROC", "PRICE", "MACD", "MACD_SIGNAL", "MACD_HIST",
 ]);
 const PRICE_SOURCES = new Set(["open", "high", "low", "close", "volume"]);
-const SIGNAL_SOURCES = new Set(["fgi"]);
+const SIGNAL_SOURCES = new Set(["fgi", "mom", "breadth"]);
 const OPERATORS = new Set([">", "<", ">=", "<=", "cross_above", "cross_below"]);
 
 export const SPEC_GUIDE = `A StrategySpec is JSON with this shape:
@@ -49,6 +49,7 @@ Rules:
 - A condition is either {"all":[...]}, {"any":[...]}, or a leaf {"left","op","right"}.
 - op in {">","<",">=","<=","cross_above","cross_below"}.
 - left/right are an indicator id, a price source (open/high/low/close/volume), the signal "fgi", or a number.
+- Market signals (CMC-derived, usable in any condition): "fgi" = Fear & Greed Index (0-100), "mom" = market momentum (mean trailing % return across the universe), "breadth" = % of the universe above its 50-bar trend (0-100). Use them for regime filters.
 - Strategies are LONG/FLAT only. Entry opens, exit (or a risk rule) closes.
 - Keep it simple and economically sensible; the backtester is strict and deterministic.`;
 
